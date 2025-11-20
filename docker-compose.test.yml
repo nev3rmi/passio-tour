@@ -1,0 +1,95 @@
+# Docker Compose override for testing environment
+# Use: docker-compose -f docker-compose.yml -f docker-compose.test.yml up
+
+version: '3.8'
+
+services:
+  # Test PostgreSQL
+  postgres:
+    environment:
+      POSTGRES_DB: passio_tour_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test_password
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+
+  # Test Redis
+  redis:
+    environment:
+      REDIS_DB: 1
+
+  # Test Backend Service
+  backend:
+    environment:
+      NODE_ENV: test
+      DATABASE_HOST: postgres
+      DATABASE_NAME: passio_tour_test
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: test_password
+      REDIS_HOST: redis
+      REDIS_DB: 1
+      JWT_SECRET: test-jwt-secret-key-for-testing-only
+      SESSION_SECRET: test-session-secret-key-for-testing-only
+      LOG_LEVEL: error
+      DEBUG: ""
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: ["npm", "test"]
+
+  # Test Runner (additional service for running tests)
+  test-runner:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    environment:
+      NODE_ENV: test
+      DATABASE_HOST: postgres
+      DATABASE_NAME: passio_tour_test
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: test_password
+      REDIS_HOST: redis
+      REDIS_DB: 1
+      JWT_SECRET: test-jwt-secret-key-for-testing-only
+      SESSION_SECRET: test-session-secret-key-for-testing-only
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/test-results:/app/test-results
+      - ./backend/coverage:/app/coverage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - passio-network
+    command: ["npm", "test", "--", "--coverage", "--runInBand"]
+    profiles:
+      - test-only
+
+  # Frontend Testing
+  frontend-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_API_URL: http://backend:5000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - ./frontend/test-results:/app/test-results
+      - ./frontend/coverage:/app/coverage
+    networks:
+      - passio-network
+    command: ["npm", "test", "--", "--coverage", "--watchAll=false"]
+    profiles:
+      - test-only
+
+volumes:
+  postgres_test_data:
+    driver: local
+
+networks:
+  passio-network:
+    name: passio-test-network

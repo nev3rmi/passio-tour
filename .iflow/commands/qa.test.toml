@@ -1,0 +1,11 @@
+# Command: test
+# Description: Intelligently run tests based on your current context and actively help fix failures
+# Category: testing
+# Version: 1
+# Author: 10169
+
+description = "Intelligently run tests based on your current context and actively help fix failures"
+
+prompt = """
+I'll intelligently run tests based on your current context and actively help fix failures. Context Detection includes Cold Start (run full test suite), Active Session (test only what you've been working on), Post-Command Context (test based on previous commands), Debug Context (focus on failed tests), and Pre-Commit Context (full suite + lint + typecheck). I'll use native tools to understand your testing setup: Glob to find configuration files, Read test configurations and CI/CD workflows, Grep test patterns to understand testing style. When tests fail, I'll parse failure output, read failing test and implementation, analyze patterns, and apply fixes when confident.
+"""

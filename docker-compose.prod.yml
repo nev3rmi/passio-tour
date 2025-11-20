@@ -1,0 +1,146 @@
+# Docker Compose override for production environment
+# Use: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+version: '3.8'
+
+services:
+  # Production PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: passio_tour_prod
+      POSTGRES_USER: passio_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-prod:/docker-entrypoint-initdb.d
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.7
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+    secrets:
+      - postgres_password
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Production Redis
+  redis:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis-prod.conf:/usr/local/etc/redis/redis.conf
+    secrets:
+      - redis_password
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Production Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_SSL: true
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      SESSION_SECRET: ${SESSION_SECRET}
+    volumes:
+      - ./backend/uploads:/app/uploads:rw
+      - ./backend/logs:/app/logs:rw
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "10"
+
+  # Production Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_URL: ${BACKEND_URL}
+      VITE_WS_URL: ${WS_URL}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: passio-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - passio-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  redis_password:
+    file: ./secrets/redis_password.txt
+
+networks:
+  passio-network:
+    driver: bridge

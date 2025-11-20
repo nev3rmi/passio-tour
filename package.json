@@ -1,0 +1,98 @@
+{
+  "name": "passio-tour",
+  "version": "1.0.0",
+  "description": "Passio Tour Management System - Full Stack Application",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build:shared": "echo \"Shared types and utilities are used directly\"",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm run test",
+    "test:backend": "cd backend && npm run test",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:fix": "npm run lint:frontend:fix && npm run lint:backend:fix",
+    "lint:frontend:fix": "cd frontend && npm run lint:fix",
+    "lint:backend:fix": "cd backend && npm run lint:fix",
+    "format": "npm run format:frontend && npm run format:backend",
+    "format:frontend": "cd frontend && npm run format",
+    "format:backend": "cd backend && npm run format",
+    "type-check": "npm run type-check:frontend && npm run type-check:backend",
+    "type-check:frontend": "cd frontend && npm run type-check",
+    "type-check:backend": "cd backend && npm run type-check",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "clean": "npm run clean:frontend && npm run clean:backend",
+    "clean:frontend": "cd frontend && rm -rf node_modules dist .next",
+    "clean:backend": "cd backend && rm -rf node_modules dist logs",
+    "prepare": "husky install",
+    "postinstall": "husky install"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.1.0",
+    "prettier": "^2.8.3",
+    "resolve": "^1.22.11",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0"
+  },
+  "lint-staged": {
+    "frontend/**/*.{js,jsx,ts,tsx}": [
+      "cd frontend && npm run lint:fix",
+      "cd frontend && npm run format"
+    ],
+    "backend/**/*.{js,ts}": [
+      "cd backend && npm run lint:fix",
+      "cd backend && npm run format"
+    ],
+    "shared/**/*.{js,ts}": [
+      "npm run lint:fix:backend",
+      "npm run format:backend"
+    ],
+    "*.{md,json,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm run type-check && npm run test"
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/passio-tour.git"
+  },
+  "keywords": [
+    "tour",
+    "booking",
+    "management",
+    "typescript",
+    "react",
+    "nodejs",
+    "express",
+    "postgresql",
+    "redis"
+  ],
+  "author": "Passio Tour Team",
+  "license": "MIT",
+  "dependencies": {
+    "caniuse-lite": "^1.0.30001756",
+    "moment": "^2.30.1"
+  }
+}

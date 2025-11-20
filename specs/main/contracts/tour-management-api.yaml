@@ -1,0 +1,1873 @@
+openapi: 3.0.3
+info:
+  title: Tour Management System API
+  description: |
+    Unified API for Tour Management System serving both inbound (DMC) and outbound tour operators.
+    
+    ## Features
+    - **Tour Management**: Create, manage, and search tours and services
+    - **Booking Engine**: Real-time booking with inventory management
+    - **Payment Processing**: Multi-gateway payment processing (Stripe, PayPal)
+    - **Customer Management**: User profiles and booking history
+    - **Partner Management**: B2B partner portal and commission tracking
+    - **Reporting**: Analytics and business intelligence
+    
+    ## Authentication
+    API uses JWT Bearer tokens. Obtain tokens via `/auth/login` endpoint.
+    
+    ## Rate Limiting
+    - Standard endpoints: 100 requests per minute per user
+    - Search endpoints: 30 requests per minute per user
+    - Booking endpoints: 10 requests per minute per user
+    
+    ## Error Handling
+    All endpoints return standardized error responses with appropriate HTTP status codes.
+  version: 1.0.0
+  contact:
+    name: Tour Management System
+    email: api-support@tourmanagement.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.tourmanagement.com/v1
+    description: Production server
+  - url: https://staging-api.tourmanagement.com/v1
+    description: Staging server
+  - url: http://localhost:3000/v1
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Authentication
+  /auth/login:
+    post:
+      summary: User authentication
+      description: Authenticate user and receive JWT token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User email address
+                password:
+                  type: string
+                  format: password
+                  description: User password
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  expires_in:
+                    type: integer
+                    description: Token expiry in seconds
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: Refresh JWT token using refresh token
+      tags:
+        - Authentication
+      security:
+        - RefreshAuth: []
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_in:
+                    type: integer
+
+  # User Management
+  /users/profile:
+    get:
+      summary: Get user profile
+      description: Get current user's profile information
+      tags:
+        - Users
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    
+    put:
+      summary: Update user profile
+      description: Update current user's profile information
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  # Tour Management
+  /tours:
+    get:
+      summary: Search tours
+      description: Search and filter tours based on various criteria
+      tags:
+        - Tours
+      parameters:
+        - name: search
+          in: query
+          description: Search term for tour name and description
+          schema:
+            type: string
+        - name: destination
+          in: query
+          description: Filter by destination
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: Filter by tour category
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Filter by tour type
+          schema:
+            type: string
+            enum: [inbound_service, outbound_package]
+        - name: min_price
+          in: query
+          description: Minimum price filter
+          schema:
+            type: number
+            format: decimal
+        - name: max_price
+          in: query
+          description: Maximum price filter
+          schema:
+            type: number
+            format: decimal
+        - name: start_date
+          in: query
+          description: Filter tours available from this date
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: Filter tours available until this date
+          schema:
+            type: string
+            format: date
+        - name: participants
+          in: query
+          description: Number of participants
+          schema:
+            type: integer
+            minimum: 1
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of results per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Tours retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tours:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TourSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  filters:
+                    type: object
+                    properties:
+                      destinations:
+                        type: array
+                        items:
+                          type: string
+                      categories:
+                        type: array
+                        items:
+                          type: string
+                      price_range:
+                        $ref: '#/components/schemas/PriceRange'
+
+    post:
+      summary: Create new tour
+      description: Create a new tour or service (DMC Admin and Tour Operator roles)
+      tags:
+        - Tours
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TourCreate'
+      responses:
+        '201':
+          description: Tour created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tour'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /tours/{tour_id}:
+    get:
+      summary: Get tour details
+      description: Get detailed information about a specific tour
+      tags:
+        - Tours
+      parameters:
+        - name: tour_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tour details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TourDetail'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      summary: Update tour
+      description: Update tour information (Admin and creator only)
+      tags:
+        - Tours
+      parameters:
+        - name: tour_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TourUpdate'
+      responses:
+        '200':
+          description: Tour updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tour'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      summary: Delete tour
+      description: Delete a tour (Admin and creator only)
+      tags:
+        - Tours
+      parameters:
+        - name: tour_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Tour deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Booking Management
+  /bookings:
+    get:
+      summary: Get user bookings
+      description: Retrieve bookings for the current user
+      tags:
+        - Bookings
+      parameters:
+        - name: status
+          in: query
+          description: Filter by booking status
+          schema:
+            type: string
+            enum: [pending, confirmed, cancelled, completed, no_show]
+        - name: start_date
+          in: query
+          description: Filter bookings from this date
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: Filter bookings until this date
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Bookings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BookingSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Create new booking
+      description: Create a new booking for a tour
+      tags:
+        - Bookings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreate'
+      responses:
+        '201':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          description: Tour not available for selected date/participants
+
+  /bookings/{booking_id}:
+    get:
+      summary: Get booking details
+      description: Get detailed information about a specific booking
+      tags:
+        - Bookings
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingDetail'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      summary: Update booking
+      description: Update booking details (limited fields)
+      tags:
+        - Bookings
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingUpdate'
+      responses:
+        '200':
+          description: Booking updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      summary: Cancel booking
+      description: Cancel a booking
+      tags:
+        - Bookings
+      parameters:
+        - name: booking_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for cancellation
+      responses:
+        '200':
+          description: Booking cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Availability Check
+  /tours/{tour_id}/availability:
+    get:
+      summary: Check tour availability
+      description: Get availability for a tour on specific dates
+      tags:
+        - Tours
+      parameters:
+        - name: tour_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: participants
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Availability information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tour_id:
+                    type: string
+                    format: uuid
+                  availability:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AvailabilitySlot'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Payment Processing
+  /payments:
+    post:
+      summary: Process payment
+      description: Process payment for a booking
+      tags:
+        - Payments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreate'
+      responses:
+        '201':
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '402':
+          description: Payment failed - insufficient funds or invalid card
+
+  /payments/{payment_id}:
+    get:
+      summary: Get payment details
+      description: Get details of a specific payment
+      tags:
+        - Payments
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDetail'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /payments/{payment_id}/refund:
+    post:
+      summary: Process refund
+      description: Process refund for a payment
+      tags:
+        - Payments
+      parameters:
+        - name: payment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  format: decimal
+                  description: Refund amount (leave empty for full refund)
+                reason:
+                  type: string
+                  description: Reason for refund
+      responses:
+        '200':
+          description: Refund processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Partner Management (B2B)
+  /partners:
+    get:
+      summary: Get partners
+      description: Get list of partners (Admin and Tour Operator roles)
+      tags:
+        - Partners
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, suspended]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Partners retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  partners:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PartnerSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  # Inventory Management (Admin)
+  /inventory:
+    get:
+      summary: Get inventory
+      description: Get inventory for tours (Admin and Tour Creator roles)
+      tags:
+        - Inventory
+      parameters:
+        - name: tour_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Inventory retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inventory:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventorySlot'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+    post:
+      summary: Update inventory
+      description: Update inventory for a tour date
+      tags:
+        - Inventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryUpdate'
+      responses:
+        '201':
+          description: Inventory updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySlot'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # Reports and Analytics
+  /reports/bookings:
+    get:
+      summary: Get booking reports
+      description: Get booking statistics and reports
+      tags:
+        - Reports
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: group_by
+          in: query
+          description: Group results by time period
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+        - name: tour_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingReport'
+
+  /reports/revenue:
+    get:
+      summary: Get revenue reports
+      description: Get revenue statistics and reports
+      tags:
+        - Reports
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: currency
+          in: query
+          schema:
+            type: string
+            default: USD
+        - name: group_by
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+      responses:
+        '200':
+          description: Revenue reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueReport'
+
+# Webhooks (for payment gateways)
+webhooks:
+  payment/stripe:
+    post:
+      summary: Stripe webhook
+      description: Handle Stripe payment webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed successfully
+
+  payment/paypal:
+    post:
+      summary: PayPal webhook
+      description: Handle PayPal payment webhooks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed successfully
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    RefreshAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # User Schemas
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [customer, dmc_admin, tour_operator, partner_agent, super_admin]
+        first_name:
+          type: string
+        last_name:
+          type: string
+        company_name:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    UserProfile:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            phone:
+              type: string
+            language_preference:
+              type: string
+              default: en
+            timezone:
+              type: string
+              default: UTC
+            preferences:
+              type: object
+              properties:
+                notifications:
+                  type: object
+                  properties:
+                    email:
+                      type: boolean
+                      default: true
+                    sms:
+                      type: boolean
+                      default: false
+                    booking_updates:
+                      type: boolean
+                      default: true
+                    marketing:
+                      type: boolean
+                      default: false
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        language_preference:
+          type: string
+        timezone:
+          type: string
+        preferences:
+          type: object
+
+    # Tour Schemas
+    TourSummary:
+      type: object
+      properties:
+        tour_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        short_description:
+          type: string
+        destination:
+          type: string
+        category:
+          type: string
+        type:
+          type: string
+          enum: [inbound_service, outbound_package]
+        base_price:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        duration_hours:
+          type: number
+        min_participants:
+          type: integer
+        max_participants:
+          type: integer
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              alt_text:
+                type: string
+              is_primary:
+                type: boolean
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+        review_count:
+          type: integer
+
+    Tour:
+      allOf:
+        - $ref: '#/components/schemas/TourSummary'
+        - type: object
+          properties:
+            description:
+              type: string
+            difficulty_level:
+              type: string
+              enum: [easy, moderate, challenging]
+            languages:
+              type: array
+              items:
+                type: string
+            inclusions:
+              type: array
+              items:
+                type: string
+            exclusions:
+              type: array
+              items:
+                type: string
+            meeting_point:
+              type: string
+            requirements:
+              type: array
+              items:
+                type: string
+            cancellation_policy:
+              type: string
+            status:
+              type: string
+              enum: [draft, active, inactive, archived]
+
+    TourDetail:
+      allOf:
+        - $ref: '#/components/schemas/Tour'
+        - type: object
+          properties:
+            supplier_info:
+              type: object
+              properties:
+                supplier_name:
+                  type: string
+                contact_email:
+                  type: string
+                contact_phone:
+                  type: string
+                commission_rate:
+                  type: number
+                  format: decimal
+            availability_summary:
+              type: object
+              properties:
+                next_available_date:
+                  type: string
+                  format: date
+                available_dates_count:
+                  type: integer
+                price_range:
+                  $ref: '#/components/schemas/PriceRange'
+
+    TourCreate:
+      type: object
+      required:
+        - name
+        - description
+        - type
+        - category
+        - destination
+        - duration_hours
+        - min_participants
+        - max_participants
+        - base_price
+        - currency
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        short_description:
+          type: string
+          maxLength: 500
+        type:
+          type: string
+          enum: [inbound_service, outbound_package]
+        category:
+          type: string
+        destination:
+          type: string
+        duration_hours:
+          type: number
+          minimum: 0.5
+        difficulty_level:
+          type: string
+          enum: [easy, moderate, challenging]
+          default: moderate
+        min_participants:
+          type: integer
+          minimum: 1
+        max_participants:
+          type: integer
+          minimum: 1
+        base_price:
+          type: number
+          format: decimal
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        languages:
+          type: array
+          items:
+            type: string
+          default: ["en"]
+        inclusions:
+          type: array
+          items:
+            type: string
+        exclusions:
+          type: array
+          items:
+            type: string
+        meeting_point:
+          type: string
+        requirements:
+          type: array
+          items:
+            type: string
+        cancellation_policy:
+          type: string
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              alt_text:
+                type: string
+              is_primary:
+                type: boolean
+                default: false
+
+    TourUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        short_description:
+          type: string
+        category:
+          type: string
+        destination:
+          type: string
+        duration_hours:
+          type: number
+        difficulty_level:
+          type: string
+          enum: [easy, moderate, challenging]
+        min_participants:
+          type: integer
+        max_participants:
+          type: integer
+        base_price:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        languages:
+          type: array
+          items:
+            type: string
+        inclusions:
+          type: array
+          items:
+            type: string
+        exclusions:
+          type: array
+          items:
+            type: string
+        meeting_point:
+          type: string
+        requirements:
+          type: array
+          items:
+            type: string
+        cancellation_policy:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, inactive, archived]
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              alt_text:
+                type: string
+              is_primary:
+                type: boolean
+
+    # Booking Schemas
+    BookingSummary:
+      type: object
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        booking_reference:
+          type: string
+        tour:
+          type: object
+          properties:
+            tour_id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            destination:
+              type: string
+        travel_date:
+          type: string
+          format: date
+        participants:
+          type: integer
+        total_amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed, no_show]
+        payment_status:
+          type: string
+          enum: [unpaid, partial, paid, refunded, partial_refund]
+        booking_date:
+          type: string
+          format: date-time
+
+    Booking:
+      allOf:
+        - $ref: '#/components/schemas/BookingSummary'
+        - type: object
+          properties:
+            special_requests:
+              type: string
+            emergency_contact:
+              type: object
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+                relationship:
+                  type: string
+            participant_details:
+              type: array
+              items:
+                type: object
+                properties:
+                  first_name:
+                    type: string
+                  last_name:
+                    type: string
+                  date_of_birth:
+                    type: string
+                    format: date
+                  passport_number:
+                    type: string
+                  dietary_restrictions:
+                    type: string
+                  special_requirements:
+                    type: string
+            voucher_url:
+              type: string
+
+    BookingDetail:
+      allOf:
+        - $ref: '#/components/schemas/Booking'
+        - type: object
+          properties:
+            customer:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+            agent:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                company_name:
+                  type: string
+            payments:
+              type: array
+              items:
+                $ref: '#/components/schemas/PaymentSummary'
+            cancellation_reason:
+              type: string
+            cancelled_at:
+              type: string
+              format: date-time
+            cancelled_by:
+              type: string
+
+    BookingCreate:
+      type: object
+      required:
+        - tour_id
+        - travel_date
+        - participants
+        - emergency_contact
+      properties:
+        tour_id:
+          type: string
+          format: uuid
+        travel_date:
+          type: string
+          format: date
+        participants:
+          type: integer
+          minimum: 1
+        special_requests:
+          type: string
+        emergency_contact:
+          type: object
+          required:
+            - name
+            - phone
+            - relationship
+          properties:
+            name:
+              type: string
+            phone:
+              type: string
+            relationship:
+              type: string
+        participant_details:
+          type: array
+          items:
+            type: object
+            properties:
+              first_name:
+                type: string
+              last_name:
+                type: string
+              date_of_birth:
+                type: string
+                format: date
+              passport_number:
+                type: string
+              dietary_restrictions:
+                type: string
+              special_requirements:
+                type: string
+
+    BookingUpdate:
+      type: object
+      properties:
+        special_requests:
+          type: string
+        emergency_contact:
+          type: object
+          properties:
+            name:
+              type: string
+            phone:
+              type: string
+            relationship:
+              type: string
+        participant_details:
+          type: array
+          items:
+            type: object
+            properties:
+              first_name:
+                type: string
+              last_name:
+                type: string
+              date_of_birth:
+                type: string
+                format: date
+              passport_number:
+                type: string
+              dietary_restrictions:
+                type: string
+              special_requirements:
+                type: string
+
+    # Payment Schemas
+    Payment:
+      type: object
+      properties:
+        payment_id:
+          type: string
+          format: uuid
+        booking_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        gateway:
+          type: string
+          enum: [stripe, paypal]
+        status:
+          type: string
+          enum: [pending, completed, failed, refunded]
+        payment_method:
+          type: object
+          properties:
+            type:
+              type: string
+            last_four:
+              type: string
+            brand:
+              type: string
+        processed_at:
+          type: string
+          format: date-time
+        fees:
+          type: number
+          format: decimal
+        net_amount:
+          type: number
+          format: decimal
+
+    PaymentSummary:
+      type: object
+      properties:
+        payment_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        gateway:
+          type: string
+        status:
+          type: string
+        processed_at:
+          type: string
+          format: date-time
+
+    PaymentDetail:
+      allOf:
+        - $ref: '#/components/schemas/Payment'
+        - type: object
+          properties:
+            booking:
+              type: object
+              properties:
+                booking_reference:
+                  type: string
+                travel_date:
+                  type: string
+                  format: date
+            gateway_transaction_id:
+              type: string
+            failure_reason:
+              type: string
+            refunded_at:
+              type: string
+              format: date-time
+            refund_amount:
+              type: number
+              format: decimal
+
+    PaymentCreate:
+      type: object
+      required:
+        - booking_id
+        - payment_method
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        payment_method:
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/StripePaymentMethod'
+            - $ref: '#/components/schemas/PayPalPaymentMethod'
+
+    StripePaymentMethod:
+      type: object
+      required:
+        - type
+        - token
+      properties:
+        type:
+          type: string
+          enum: [card]
+        token:
+          type: string
+          description: Stripe token from client-side
+
+    PayPalPaymentMethod:
+      type: object
+      required:
+        - type
+        - order_id
+      properties:
+        type:
+          type: string
+          enum: [paypal]
+        order_id:
+          type: string
+          description: PayPal order ID
+
+    # Inventory Schemas
+    InventorySlot:
+      type: object
+      properties:
+        inventory_id:
+          type: string
+          format: uuid
+        tour_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        available_count:
+          type: integer
+        max_capacity:
+          type: integer
+        base_price:
+          type: number
+          format: decimal
+        is_available:
+          type: boolean
+        notes:
+          type: string
+
+    InventoryUpdate:
+      type: object
+      required:
+        - tour_id
+        - date
+        - available_count
+        - max_capacity
+      properties:
+        tour_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        available_count:
+          type: integer
+          minimum: 0
+        max_capacity:
+          type: integer
+          minimum: 1
+        base_price:
+          type: number
+          format: decimal
+        is_available:
+          type: boolean
+          default: true
+        notes:
+          type: string
+
+    AvailabilitySlot:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        available_spots:
+          type: integer
+        max_capacity:
+          type: integer
+        price:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        is_available:
+          type: boolean
+        min_advance_booking:
+          type: integer
+          description: Minimum hours advance booking required
+
+    # Partner Schemas
+    PartnerSummary:
+      type: object
+      properties:
+        partner_id:
+          type: string
+          format: uuid
+        company_name:
+          type: string
+        contact_person:
+          type: string
+        email:
+          type: string
+          phone:
+          type: string
+        partner_type:
+          type: string
+          enum: [travel_agent, tour_operator, wholesaler]
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        credit_limit:
+          type: number
+          format: decimal
+        commission_rate:
+          type: number
+          format: decimal
+
+    # Report Schemas
+    BookingReport:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            total_bookings:
+              type: integer
+            confirmed_bookings:
+              type: integer
+            cancelled_bookings:
+              type: integer
+            total_participants:
+              type: integer
+            average_participants:
+              type: number
+              format: float
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              period:
+                type: string
+              bookings_count:
+                type: integer
+              participants:
+                type: integer
+              revenue:
+                type: number
+                format: decimal
+
+    RevenueReport:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            total_revenue:
+              type: number
+              format: decimal
+            total_fees:
+              type: number
+              format: decimal
+            net_revenue:
+              type: number
+              format: decimal
+            average_booking_value:
+              type: number
+              format: decimal
+            payment_methods:
+              type: object
+              properties:
+                stripe:
+                  type: object
+                  properties:
+                    amount:
+                      type: number
+                      format: decimal
+                    count:
+                      type: integer
+                paypal:
+                  type: object
+                  properties:
+                    amount:
+                      type: number
+                      format: decimal
+                    count:
+                      type: integer
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              period:
+                type: string
+              revenue:
+                type: number
+                format: decimal
+              fees:
+                type: number
+                format: decimal
+              net_revenue:
+                type: number
+                format: decimal
+              booking_count:
+                type: integer
+
+    # Utility Schemas
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+    PriceRange:
+      type: object
+      properties:
+        min:
+          type: number
+          format: decimal
+        max:
+          type: number
+          format: decimal
+        currency:
+          type: string
+
+  responses:
+    BadRequestError:
+      description: Bad request - invalid input parameters
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: BAD_REQUEST
+                  message:
+                    type: string
+                  details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+
+    UnauthorizedError:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: UNAUTHORIZED
+                  message:
+                    type: string
+                    example: Authentication required
+
+    ForbiddenError:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: FORBIDDEN
+                  message:
+                    type: string
+                    example: Insufficient permissions
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: NOT_FOUND
+                  message:
+                    type: string
+                    example: Resource not found
+
+  examples:
+    BookingCreate:
+      summary: Create booking example
+      value:
+        tour_id: "123e4567-e89b-12d3-a456-426614174000"
+        travel_date: "2025-12-15"
+        participants: 2
+        special_requests: "Vegetarian meal preferred"
+        emergency_contact:
+          name: "Jane Doe"
+          phone: "+1234567890"
+          relationship: "spouse"
+        participant_details:
+          - first_name: "John"
+            last_name: "Smith"
+            date_of_birth: "1990-05-15"
+            dietary_restrictions: "Vegetarian"
+          - first_name: "Jane"
+            last_name: "Smith"
+            date_of_birth: "1992-08-22"

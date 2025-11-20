@@ -1,0 +1,127 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es2020": true,
+    "jest": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "@typescript-eslint/recommended",
+    "prettier"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "node",
+    "import"
+  ],
+  "rules": {
+    // TypeScript specific
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-empty-function": "off",
+    "@typescript-eslint/no-non-null-assertion": "warn",
+    "@typescript-eslint/prefer-optional-chain": "error",
+    "@typescript-eslint/prefer-nullish-coalescing": "error",
+    "@typescript-eslint/no-var-requires": "error",
+
+    // Node.js specific
+    "node/no-unsupported-features/es-syntax": "off",
+    "node/no-missing-import": "off",
+    "node/file-extension-in-import": ["error", "always"],
+    "node/prefer-global/process": "error",
+
+    // Import rules
+    "import/no-duplicates": "error",
+    "import/order": ["error", {
+      "groups": [
+        "builtin",
+        "external", 
+        "internal",
+        "parent",
+        "sibling",
+        "index"
+      ],
+      "newlines-between": "always",
+      "alphabetize": {
+        "order": "asc",
+        "caseInsensitive": true
+      }
+    }],
+    "sort-imports": "off",
+
+    // General JavaScript/TypeScript
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "no-debugger": "error",
+    "no-alert": "error",
+    "no-return-await": "error",
+    "prefer-const": "error",
+    "no-var": "error",
+    "prefer-arrow-callback": "error",
+    "prefer-template": "error",
+
+    // Error handling
+    "handle-callback-err": "error",
+    "no-throw-literal": "error",
+
+    // Security
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+    "no-script-url": "error",
+
+    // Best practices
+    "eqeqeq": ["error", "always"],
+    "no-else-return": "error",
+    "no-empty-function": "off",
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-magic-numbers": ["warn", {
+      "ignore": [0, 1, -1, 2],
+      "ignoreArrayIndexes": true,
+      "enforceConst": true,
+      "detectObjects": false
+    }],
+    "no-multi-spaces": "error",
+    "no-multi-str": "error",
+    "no-proto": "error",
+    "no-return-assign": "error",
+    "no-self-compare": "error",
+    "no-sequences": "error",
+    "no-unmodified-loop-condition": "error",
+    "no-unused-expressions": "error",
+    "no-useless-call": "error",
+    "no-useless-concat": "error",
+    "no-useless-return": "error",
+    "prefer-promise-reject-errors": "error",
+    "radix": "error",
+    "yoda": "error"
+  },
+  "overrides": [
+    {
+      "files": ["*.test.ts", "*.spec.ts"],
+      "env": {
+        "jest": true
+      },
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-empty-function": "off",
+        "@typescript-eslint/no-magic-numbers": "off"
+      }
+    },
+    {
+      "files": ["*.config.ts", "*.config.js"],
+      "rules": {
+        "import/no-extraneous-dependencies": "off",
+        "@typescript-eslint/no-var-requires": "off"
+      }
+    }
+  ]
+}
