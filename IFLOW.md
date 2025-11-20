@@ -39,9 +39,34 @@ npm run dev
 npm run dev:frontend  # Start frontend only
 npm run dev:backend  # Start backend only
 
-# Method 3: Using Docker Compose
+# Method 3: Using Docker Compose with auto-reload
 docker-compose up
+
+# Method 4: Docker Compose with hot reload
+docker-compose -f docker-compose.dev.yml up
 ```
+
+### Docker Development with Auto-Reload
+The project includes Docker configurations for development with automatic code reloading:
+
+```bash
+# Start all services with hot reload
+docker-compose -f docker-compose.dev.yml up
+
+# Start specific service with reload
+docker-compose -f docker-compose.dev.yml up backend
+docker-compose -f docker-compose.dev.yml up frontend
+
+# View logs for specific service
+docker-compose -f docker-compose.dev.yml logs -f backend
+docker-compose -f docker-compose.dev.yml logs -f frontend
+```
+
+**Features:**
+- **Hot Reload**: Code changes automatically rebuild and restart containers
+- **Volume Mounting**: Local source code is mounted into containers
+- **Development Tools**: Includes debugging and inspection tools
+- **Environment Isolation**: Separate development environment configuration
 
 ### Development Commands
 ```bash
@@ -73,6 +98,17 @@ cd backend && npm run migrate
 - **Database Admin**: http://localhost:8080 (Adminer)
 - **Redis Admin**: http://localhost:8081 (Redis Commander)
 - **Email Testing**: http://localhost:8025 (Mailhog)
+
+### Docker Service Ports
+When using Docker Compose:
+- **Frontend**: http://localhost:3000 (React dev server)
+- **Backend API**: http://localhost:5000 (Node.js with hot reload)
+- **PostgreSQL**: localhost:5432
+- **Redis**: localhost:6379
+- **MinIO (S3)**: http://localhost:9000 (Access Key: minioadmin, Secret: minioadmin)
+- **Adminer**: http://localhost:8080 (Database admin)
+- **Redis Commander**: http://localhost:8081 (Redis admin)
+- **Mailhog**: http://localhost:8025 (Email testing)
 
 ## Development Conventions
 

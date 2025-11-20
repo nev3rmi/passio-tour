@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tour Management API Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .loading { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i data-lucide="map" class="w-8 h-8"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold">Tour Management API Demo</h1>
+                        <p class="text-blue-100 text-sm">Interactive API Testing Interface</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white/20 backdrop-blur px-4 py-2 rounded-lg">
+                        <span class="text-sm">API Endpoint:</span>
+                        <span class="font-mono text-sm ml-2">http://localhost:5002</span>
+                    </div>
+                    <button id="statusBtn" class="bg-white/20 backdrop-blur px-4 py-2 rounded-lg hover:bg-white/30 transition-colors">
+                        <i data-lucide="wifi" class="w-4 h-4 inline mr-2"></i>
+                        Check Status
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Navigation Tabs -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="flex border-b">
+                <button class="tab-btn px-6 py-4 font-medium text-blue-600 border-b-2 border-blue-600 hover:bg-blue-50 transition-colors" data-tab="tours">
+                    <i data-lucide="compass" class="w-4 h-4 inline mr-2"></i>
+                    Tours
+                </button>
+                <button class="tab-btn px-6 py-4 font-medium text-gray-600 hover:bg-gray-50 transition-colors" data-tab="inventory">
+                    <i data-lucide="package" class="w-4 h-4 inline mr-2"></i>
+                    Inventory
+                </button>
+                <button class="tab-btn px-6 py-4 font-medium text-gray-600 hover:bg-gray-50 transition-colors" data-tab="availability">
+                    <i data-lucide="calendar-check" class="w-4 h-4 inline mr-2"></i>
+                    Availability
+                </button>
+                <button class="tab-btn px-6 py-4 font-medium text-gray-600 hover:bg-gray-50 transition-colors" data-tab="create">
+                    <i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i>
+                    Create Tour
+                </button>
+                <button class="tab-btn px-6 py-4 font-medium text-gray-600 hover:bg-gray-50 transition-colors" data-tab="logs">
+                    <i data-lucide="file-text" class="w-4 h-4 inline mr-2"></i>
+                    API Logs
+                </button>
+            </div>
+        </div>
+
+        <!-- Tours Tab -->
+        <div id="tours-tab" class="tab-content active">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Tours List -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-semibold text-gray-800">Tour Listings</h2>
+                            <button id="refreshTours" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                                <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></i>
+                                Refresh
+                            </button>
+                        </div>
+                        
+                        <!-- Filters -->
+                        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <input type="text" id="tourSearch" placeholder="Search tours..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <select id="tourType" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">All Types</option>
+                                    <option value="inbound">Inbound</option>
+                                    <option value="outbound">Outbound</option>
+                                </select>
+                                <select id="sortBy" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="name">Sort by Name</option>
+                                    <option value="price">Sort by Price</option>
+                                    <option value="duration">Sort by Duration</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Tours Grid -->
+                        <div id="toursList" class="space-y-4">
+                            <div class="text-center py-8 text-gray-500">
+                                <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-2 loading"></i>
+                                Loading tours...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tour Details -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Tour Details</h3>
+                        <div id="tourDetails" class="text-gray-500 text-center py-8">
+                            <i data-lucide="info" class="w-8 h-8 mx-auto mb-2"></i>
+                            Select a tour to view details
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Tab -->
+        <div id="inventory-tab" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800">Inventory Management</h2>
+                    <button id="refreshInventory" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></i>
+                        Refresh
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Inventory List -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4">Current Inventory</h3>
+                        <div id="inventoryList" class="space-y-3">
+                            <div class="text-center py-8 text-gray-500">
+                                <i data-lucide="package" class="w-8 h-8 mx-auto mb-2"></i>
+                                Loading inventory...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Inventory Form -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4">Add Inventory</h3>
+                        <form id="addInventoryForm" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tour ID</label>
+                                <input type="number" id="inventoryTourId" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                <input type="date" id="inventoryDate" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Available Slots</label>
+                                <input type="number" id="inventorySlots" required min="1" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                                <input type="number" id="inventoryPrice" required min="0" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                            </div>
+                            <button type="submit" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors">
+                                Add Inventory
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Availability Tab -->
+        <div id="availability-tab" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-6">Real-time Availability Check</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Check Availability Form -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4">Check Availability</h3>
+                        <form id="checkAvailabilityForm" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tour ID</label>
+                                <input type="number" id="availabilityTourId" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                <input type="date" id="availabilityStartDate" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                                <input type="date" id="availabilityEndDate" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Required Slots</label>
+                                <input type="number" id="requiredSlots" required min="1" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            <button type="submit" class="w-full bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition-colors">
+                                Check Availability
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Availability Results -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4">Availability Results</h3>
+                        <div id="availabilityResults" class="bg-gray-50 rounded-lg p-4 min-h-[300px]">
+                            <div class="text-center text-gray-500 py-8">
+                                <i data-lucide="calendar" class="w-8 h-8 mx-auto mb-2"></i>
+                                Submit form to check availability
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Tour Tab -->
+        <div id="create-tab" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-6">Create New Tour</h2>
+                
+                <form id="createTourForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tour Name *</label>
+                            <input type="text" id="tourName" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tour Type *</label>
+                            <select id="tourTypeCreate" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Select Type</option>
+                                <option value="inbound">Inbound</option>
+                                <option value="outbound">Outbound</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Duration (days) *</label>
+                            <input type="number" id="tourDuration" required min="1" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Base Price *</label>
+                            <input type="number" id="tourPrice" required min="0" step="0.01" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Max Capacity *</label>
+                            <input type="number" id="tourCapacity" required min="1" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Difficulty Level</label>
+                            <select id="tourDifficulty" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="easy">Easy</option>
+                                <option value="moderate">Moderate</option>
+                                <option value="challenging">Challenging</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="tourDescription" rows="4" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Inclusions (comma separated)</label>
+                        <input type="text" id="tourInclusions" placeholder="e.g., Hotel, Meals, Transport" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Exclusions (comma separated)</label>
+                        <input type="text" id="tourExclusions" placeholder="e.g., Flights, Personal expenses" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-500 text-white py-3 rounded-lg hover:bg-indigo-600 transition-colors font-medium">
+                        Create Tour
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- API Logs Tab -->
+        <div id="logs-tab" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">API Request Logs</h2>
+                    <button id="clearLogs" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4 inline mr-2"></i>
+                        Clear Logs
+                    </button>
+                </div>
+                <div id="apiLogs" class="space-y-2 max-h-96 overflow-y-auto">
+                    <div class="text-center text-gray-500 py-8">
+                        <i data-lucide="file-text" class="w-8 h-8 mx-auto mb-2"></i>
+                        No API calls yet
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-full transition-transform duration-300 z-50">
+        <div class="flex items-center">
+            <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
+            <span id="toastMessage"></span>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE = 'http://localhost:5002/api/v1';
+        
+        // State Management
+        let tours = [];
+        let inventory = [];
+        let apiLogs = [];
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Tab Navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                
+                // Update button states
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                    b.classList.add('text-gray-600');
+                });
+                btn.classList.remove('text-gray-600');
+                btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+                
+                // Update content visibility
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+                
+                // Reinitialize icons for the new tab
+                setTimeout(() => lucide.createIcons(), 100);
+            });
+        });
+
+        // Utility Functions
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const icon = toast.querySelector('[data-lucide]');
+            
+            toastMessage.textContent = message;
+            
+            // Update icon and color based on type
+            if (type === 'error') {
+                toast.classList.add('bg-red-600');
+                toast.classList.remove('bg-gray-800');
+                icon.setAttribute('data-lucide', 'x-circle');
+            } else if (type === 'warning') {
+                toast.classList.add('bg-yellow-600');
+                toast.classList.remove('bg-gray-800');
+                icon.setAttribute('data-lucide', 'alert-triangle');
+            } else {
+                toast.classList.add('bg-gray-800');
+                toast.classList.remove('bg-red-600', 'bg-yellow-600');
+                icon.setAttribute('data-lucide', 'check-circle');
+            }
+            
+            lucide.createIcons();
+            
+            toast.classList.remove('translate-y-full');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-full');
+            }, 3000);
+        }
+
+        function addLog(method, endpoint, status, data = null) {
+            const log = {
+                timestamp: new Date().toLocaleTimeString(),
+                method,
+                endpoint,
+                status,
+                data: data ? JSON.stringify(data).substring(0, 100) + '...' : null
+            };
+            
+            apiLogs.unshift(log);
+            if (apiLogs.length > 50) apiLogs.pop();
+            
+            updateLogsDisplay();
+        }
+
+        function updateLogsDisplay() {
+            const logsContainer = document.getElementById('apiLogs');
+            
+            if (apiLogs.length === 0) {
+                logsContainer.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i data-lucide="file-text" class="w-8 h-8 mx-auto mb-2"></i>
+                        No API calls yet
+                    </div>`;
+            } else {
+                logsContainer.innerHTML = apiLogs.map(log => `
+                    <div class="bg-gray-50 p-3 rounded-lg fade-in">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-mono bg-gray-200 px-2 py-1 rounded">${log.method}</span>
+                                <span class="text-sm font-mono text-blue-600">${log.endpoint}</span>
+                            </div>
+                            <span class="text-xs ${log.status >= 200 && log.status < 300 ? 'text-green-600' : 'text-red-600'}">
+                                ${log.status}
+                            </span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">${log.timestamp}</div>
+                        ${log.data ? `<div class="text-xs text-gray-600 mt-1 font-mono">${log.data}</div>` : ''}
+                    </div>
+                `).join('');
+            }
+            
+            lucide.createIcons();
+        }
+
+        // API Functions
+        async function apiCall(method, endpoint, data = null) {
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const result = await response.json();
+                
+                addLog(method, endpoint, response.status, data);
+                
+                if (!response.ok) {
+                    throw new Error(result.message || `HTTP error! status: ${response.status}`);
+                }
+                
+                return result;
+            } catch (error) {
+                addLog(method, endpoint, 'ERROR', data);
+                throw error;
+            }
+        }
+
+        // Tours Management
+        async function loadTours() {
+            try {
+                const toursList = document.getElementById('toursList');
+                toursList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-2 loading"></i>
+                        Loading tours...
+                    </div>`;
+                lucide.createIcons();
+                
+                const response = await apiCall('GET', '/tours');
+                tours = response.data || response;
+                
+                if (tours.length === 0) {
+                    toursList.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2"></i>
+                            No tours found
+                        </div>`;
+                } else {
+                    toursList.innerHTML = tours.map(tour => `
+                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer tour-card" data-tour-id="${tour.id}">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-lg text-gray-800">${tour.title}</h3>
+                                    <p class="text-gray-600 text-sm mt-1">${tour.short_description || tour.description || 'No description available'}</p>
+                                    <div class="flex flex-wrap gap-2 mt-3">
+                                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${tour.type}</span>
+                                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">${tour.duration_hours} hours</span>
+                                        <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">${tour.base_price}</span>
+                                        <span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">${tour.max_participants} capacity</span>
+                                    </div>
+                                </div>
+                                <button class="ml-4 text-blue-600 hover:text-blue-800">
+                                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Add click handlers for tour cards
+                    document.querySelectorAll('.tour-card').forEach(card => {
+                        card.addEventListener('click', () => {
+                            const tourId = card.dataset.tourId;
+                            showTourDetails(tourId);
+                        });
+                    });
+                }
+                
+                lucide.createIcons();
+                showToast(`Loaded ${tours.length} tours`);
+            } catch (error) {
+                document.getElementById('toursList').innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+                        Error loading tours: ${error.message}
+                    </div>`;
+                lucide.createIcons();
+                showToast('Failed to load tours', 'error');
+            }
+        }
+
+        async function showTourDetails(tourId) {
+            try {
+                const tour = tours.find(t => t.id == tourId);
+                if (!tour) {
+                    const response = await apiCall('GET', `/tours/${tourId}`);
+                    tour = response.data || response;
+                }
+                
+                const detailsContainer = document.getElementById('tourDetails');
+                detailsContainer.innerHTML = `
+                    <div class="space-y-4 fade-in">
+                        <div>
+                            <h4 class="font-semibold text-lg text-gray-800">${tour.title}</h4>
+                            <p class="text-gray-600 text-sm mt-1">${tour.description || 'No description'}</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-500">Type:</span>
+                                <span class="ml-2 font-medium">${tour.type}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Duration:</span>
+                                <span class="ml-2 font-medium">${tour.duration_hours} hours</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Base Price:</span>
+                                <span class="ml-2 font-medium">${tour.base_price}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Capacity:</span>
+                                <span class="ml-2 font-medium">${tour.max_participants}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Location:</span>
+                                <span class="ml-2 font-medium">${tour.city}, ${tour.country}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Difficulty:</span>
+                                <span class="ml-2 font-medium">${tour.difficulty_level}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Rating:</span>
+                                <span class="ml-2 font-medium">⭐ ${tour.rating} (${tour.review_count} reviews)</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Status:</span>
+                                <span class="ml-2 font-medium capitalize">${tour.status}</span>
+                            </div>
+                        </div>
+                        
+                        ${tour.inclusions && tour.inclusions.length > 0 ? `
+                        <div>
+                            <h5 class="font-medium text-gray-700 mb-2">Inclusions:</h5>
+                            <div class="text-sm text-gray-600">
+                                <ul class="list-disc list-inside space-y-1">
+                                    ${tour.inclusions.map(item => `<li>${item}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>` : ''}
+                        
+                        ${tour.exclusions && tour.exclusions.length > 0 ? `
+                        <div>
+                            <h5 class="font-medium text-gray-700 mb-2">Exclusions:</h5>
+                            <div class="text-sm text-gray-600">
+                                <ul class="list-disc list-inside space-y-1">
+                                    ${tour.exclusions.map(item => `<li>${item}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>` : ''}
+                        
+                        ${tour.languages && tour.languages.length > 0 ? `
+                        <div>
+                            <h5 class="font-medium text-gray-700 mb-2">Languages:</h5>
+                            <div class="text-sm text-gray-600">${tour.languages.join(', ')}</div>
+                        </div>` : ''}
+                        
+                        ${tour.meeting_point ? `
+                        <div>
+                            <h5 class="font-medium text-gray-700 mb-2">Meeting Point:</h5>
+                            <div class="text-sm text-gray-600">${tour.meeting_point}</div>
+                        </div>` : ''}
+                        
+                        <div class="pt-4 border-t">
+                            <button onclick="deleteTour(${tour.id})" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm">
+                                <i data-lucide="trash-2" class="w-4 h-4 inline mr-2"></i>
+                                Delete Tour
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                lucide.createIcons();
+            } catch (error) {
+                document.getElementById('tourDetails').innerHTML = `
+                    <div class="text-red-500 text-center py-4">
+                        <i data-lucide="alert-circle" class="w-6 h-6 mx-auto mb-2"></i>
+                        Error loading tour details
+                    </div>`;
+                lucide.createIcons();
+                showToast('Failed to load tour details', 'error');
+            }
+        }
+
+        async function deleteTour(tourId) {
+            if (!confirm('Are you sure you want to delete this tour?')) return;
+            
+            try {
+                await apiCall('DELETE', `/tours/${tourId}`);
+                showToast('Tour deleted successfully');
+                loadTours();
+                document.getElementById('tourDetails').innerHTML = `
+                    <div class="text-gray-500 text-center py-8">
+                        <i data-lucide="info" class="w-8 h-8 mx-auto mb-2"></i>
+                        Select a tour to view details
+                    </div>`;
+                lucide.createIcons();
+            } catch (error) {
+                showToast('Failed to delete tour', 'error');
+            }
+        }
+
+        // Inventory Management
+        async function loadInventory() {
+            try {
+                const inventoryList = document.getElementById('inventoryList');
+                inventoryList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-2 loading"></i>
+                        Loading inventory...
+                    </div>`;
+                lucide.createIcons();
+                
+                const response = await apiCall('GET', '/inventory');
+                inventory = response.data?.inventory || response.inventory || response;
+                
+                if (inventory.length === 0) {
+                    inventoryList.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <i data-lucide="package" class="w-8 h-8 mx-auto mb-2"></i>
+                            No inventory found
+                        </div>`;
+                } else {
+                    inventoryList.innerHTML = inventory.map(item => `
+                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="font-medium text-gray-800">${item.tour_title}</div>
+                                    <div class="text-sm text-gray-600 mt-1">Date: ${new Date(item.date).toLocaleDateString()}</div>
+                                    <div class="text-sm text-gray-600">Time: ${item.start_time} - ${item.end_time}</div>
+                                    <div class="flex gap-4 mt-2 text-sm">
+                                        <span class="text-${item.is_available ? 'green' : 'red'}-600">${item.available_count} available</span>
+                                        <span class="text-blue-600">${item.base_price}</span>
+                                        <span class="text-gray-600">${item.available_count}/${item.max_capacity} capacity</span>
+                                    </div>
+                                </div>
+                                <button onclick="deleteInventory('${item.inventory_id}')" class="text-red-500 hover:text-red-700">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                lucide.createIcons();
+                showToast(`Loaded ${inventory.length} inventory items`);
+            } catch (error) {
+                document.getElementById('inventoryList').innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+                        Error loading inventory: ${error.message}
+                    </div>`;
+                lucide.createIcons();
+                showToast('Failed to load inventory', 'error');
+            }
+        }
+
+        async function deleteInventory(inventoryId) {
+            try {
+                await apiCall('DELETE', `/inventory/${inventoryId}`);
+                showToast('Inventory item deleted successfully');
+                loadInventory();
+            } catch (error) {
+                showToast('Failed to delete inventory item', 'error');
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('refreshTours').addEventListener('click', loadTours);
+        document.getElementById('refreshInventory').addEventListener('click', loadInventory);
+
+        // Check API Status
+        document.getElementById('statusBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE}/tours`);
+                if (response.ok) {
+                    showToast('API is online and responding');
+                } else {
+                    showToast('API is responding with errors', 'warning');
+                }
+            } catch (error) {
+                showToast('API is offline or not responding', 'error');
+            }
+        });
+
+        // Clear Logs
+        document.getElementById('clearLogs').addEventListener('click', () => {
+            apiLogs = [];
+            updateLogsDisplay();
+            showToast('Logs cleared');
+        });
+
+        // Add Inventory Form
+        document.getElementById('addInventoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                tour_id: parseInt(document.getElementById('inventoryTourId').value),
+                tour_date: document.getElementById('inventoryDate').value,
+                available_slots: parseInt(document.getElementById('inventorySlots').value),
+                price: parseFloat(document.getElementById('inventoryPrice').value)
+            };
+            
+            try {
+                await apiCall('POST', '/inventory', formData);
+                showToast('Inventory added successfully');
+                e.target.reset();
+                loadInventory();
+            } catch (error) {
+                showToast('Failed to add inventory', 'error');
+            }
+        });
+
+        // Check Availability Form
+        document.getElementById('checkAvailabilityForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                tour_id: parseInt(document.getElementById('availabilityTourId').value),
+                start_date: document.getElementById('availabilityStartDate').value,
+                end_date: document.getElementById('availabilityEndDate').value,
+                required_slots: parseInt(document.getElementById('requiredSlots').value)
+            };
+            
+            try {
+                const resultsContainer = document.getElementById('availabilityResults');
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-2 loading"></i>
+                        Checking availability...
+                    </div>`;
+                lucide.createIcons();
+                
+                // For demo purposes, check availability for each date in the range
+                const startDate = new Date(formData.start_date);
+                const endDate = new Date(formData.end_date);
+                const availabilityResults = [];
+                
+                for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
+                    const dateStr = date.toISOString().split('T')[0];
+                    try {
+                        const response = await apiCall('GET', `/inventory/availability?tour_id=tour-${formData.tour_id}&date=${dateStr}&participants=${formData.required_slots}`);
+                        availabilityResults.push(response.data || response);
+                    } catch (error) {
+                        // Skip dates with errors
+                    }
+                }
+                
+                const availability = availabilityResults;
+                
+                if (availability.length === 0) {
+                    resultsContainer.innerHTML = `
+                        <div class="text-center py-8 text-orange-500">
+                            <i data-lucide="calendar-x" class="w-8 h-8 mx-auto mb-2"></i>
+                            No availability found for the selected dates
+                        </div>`;
+                } else {
+                    resultsContainer.innerHTML = `
+                        <div class="space-y-3">
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <div class="font-medium text-green-800">Available Dates Found!</div>
+                            </div>
+                            ${availability.map(item => `
+                                <div class="border rounded-lg p-3">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <div class="font-medium">${new Date(item.date).toLocaleDateString()}</div>
+                                            <div class="text-sm text-gray-600">
+                                                ${item.available ? `${item.remaining_spots} slots available` : 'Not available'}
+                                            </div>
+                                            <div class="text-xs text-gray-500">${item.start_time} - ${item.end_time}</div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="font-semibold ${item.available ? 'text-green-600' : 'text-red-600'}">
+                                                ${item.available ? `${item.price_info.total_price}` : 'Unavailable'}
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                ${item.available ? `for ${formData.required_slots} people` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>`;
+                }
+                
+                lucide.createIcons();
+                showToast('Availability check completed');
+            } catch (error) {
+                document.getElementById('availabilityResults').innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i data-lucide="alert-circle" class="w-8 h-8 mx-auto mb-2"></i>
+                        Error checking availability: ${error.message}
+                    </div>`;
+                lucide.createIcons();
+                showToast('Failed to check availability', 'error');
+            }
+        });
+
+        // Create Tour Form
+        document.getElementById('createTourForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('tourName').value,
+                type: document.getElementById('tourTypeCreate').value,
+                duration: parseInt(document.getElementById('tourDuration').value),
+                base_price: parseFloat(document.getElementById('tourPrice').value),
+                max_capacity: parseInt(document.getElementById('tourCapacity').value),
+                difficulty_level: document.getElementById('tourDifficulty').value,
+                description: document.getElementById('tourDescription').value,
+                inclusions: document.getElementById('tourInclusions').value,
+                exclusions: document.getElementById('tourExclusions').value
+            };
+            
+            try {
+                await apiCall('POST', '/tours', formData);
+                showToast('Tour created successfully!');
+                e.target.reset();
+                loadTours();
+                
+                // Switch to tours tab to show the new tour
+                document.querySelector('[data-tab="tours"]').click();
+            } catch (error) {
+                showToast('Failed to create tour', 'error');
+            }
+        });
+
+        // Search and Filter functionality
+        document.getElementById('tourSearch').addEventListener('input', (e) => {
+            filterTours();
+        });
+
+        document.getElementById('tourType').addEventListener('change', () => {
+            filterTours();
+        });
+
+        document.getElementById('sortBy').addEventListener('change', () => {
+            filterTours();
+        });
+
+        function filterTours() {
+            const searchTerm = document.getElementById('tourSearch').value.toLowerCase();
+            const typeFilter = document.getElementById('tourType').value;
+            const sortBy = document.getElementById('sortBy').value;
+            
+            let filteredTours = [...tours];
+            
+            // Apply search filter
+            if (searchTerm) {
+                filteredTours = filteredTours.filter(tour => 
+                    tour.title.toLowerCase().includes(searchTerm) ||
+                    (tour.description && tour.description.toLowerCase().includes(searchTerm)) ||
+                    (tour.short_description && tour.short_description.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Apply type filter
+            if (typeFilter) {
+                filteredTours = filteredTours.filter(tour => tour.type.toLowerCase() === typeFilter.toLowerCase());
+            }
+            
+            // Apply sorting
+            filteredTours.sort((a, b) => {
+                switch(sortBy) {
+                    case 'name':
+                        return a.title.localeCompare(b.title);
+                    case 'price':
+                        return a.base_price - b.base_price;
+                    case 'duration':
+                        return a.duration_hours - b.duration_hours;
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Update display
+            const toursList = document.getElementById('toursList');
+            if (filteredTours.length === 0) {
+                toursList.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i data-lucide="search" class="w-8 h-8 mx-auto mb-2"></i>
+                        No tours match your criteria
+                    </div>`;
+            } else {
+                toursList.innerHTML = filteredTours.map(tour => `
+                    <div class="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer tour-card" data-tour-id="${tour.id}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-lg text-gray-800">${tour.title}</h3>
+                                <p class="text-gray-600 text-sm mt-1">${tour.short_description || tour.description || 'No description available'}</p>
+                                <div class="flex flex-wrap gap-2 mt-3">
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${tour.type}</span>
+                                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">${tour.duration_hours} hours</span>
+                                    <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">${tour.base_price}</span>
+                                    <span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded">${tour.max_participants} capacity</span>
+                                </div>
+                            </div>
+                            <button class="ml-4 text-blue-600 hover:text-blue-800">
+                                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Re-add click handlers
+                document.querySelectorAll('.tour-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const tourId = card.dataset.tourId;
+                        showTourDetails(tourId);
+                    });
+                });
+            }
+            
+            lucide.createIcons();
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTours();
+            loadInventory();
+            
+            // Set today's date as default for date inputs
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('inventoryDate').value = today;
+            document.getElementById('availabilityStartDate').value = today;
+            
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 7);
+            document.getElementById('availabilityEndDate').value = tomorrow.toISOString().split('T')[0];
+        });
+    </script>
+</body>
+</html>

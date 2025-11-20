@@ -2,11 +2,27 @@ import { Router, Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { TourController } from '../controllers/TourController';
 import { auth } from '../../middleware/auth';
-import { validateRequest } from '../../middleware/validation';
+import { validationResult } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();
 const tourController = new TourController();
+
+// Simple validation middleware
+const validateRequest = (req: Request, res: Response, next: Function) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Request validation failed',
+        details: errors.array()
+      }
+    });
+  }
+  next();
+};
 
 // Rate limiting for tour operations
 const tourLimiter = rateLimit({

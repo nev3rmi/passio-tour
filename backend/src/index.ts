@@ -14,9 +14,9 @@ import { logger } from '@/utils/logger'
 import { errorHandler, notFoundHandler } from '@/middleware/errorHandler'
 import { validateEnv } from '@/utils/validateEnv'
 
-// Import routes (will be created in later phases)
-// import authRoutes from '@/api/routes/auth'
-// import tourRoutes from '@/api/routes/tours'
+// Import API routes
+import { toursRouter } from '@/api/routes/tours'
+import { inventoryRouter } from '@/api/routes/inventory'
 
 class App {
   public express: express.Application
@@ -120,9 +120,9 @@ class App {
       })
     })
 
-    // API routes will be added here in later phases
-    // this.express.use('/api/v1/auth', authRoutes)
-    // this.express.use('/api/v1/tours', tourRoutes)
+    // API routes
+    this.express.use('/api/v1/tours', toursRouter)
+    this.express.use('/api/v1/inventory', inventoryRouter)
 
     // API documentation endpoint
     this.express.get('/api', (req, res) => {
@@ -132,8 +132,8 @@ class App {
         documentation: 'https://github.com/passio-tour/api-docs',
         endpoints: {
           health: '/health',
-          auth: '/api/v1/auth',
           tours: '/api/v1/tours',
+          inventory: '/api/v1/inventory',
           bookings: '/api/v1/bookings',
           users: '/api/v1/users',
         },
