@@ -18,7 +18,9 @@
     "migrate:status": "ts-node scripts/migrate.ts status",
     "migrate:rollback": "ts-node scripts/migrate.ts rollback",
     "migrate:reset": "ts-node scripts/migrate.ts reset --confirm",
-    "migrate:create": "ts-node scripts/migrate.ts create"
+    "migrate:create": "ts-node scripts/migrate.ts create",
+    "seed": "ts-node scripts/seed.ts",
+    "seed:reset": "ts-node scripts/seed.ts --reset"
   },
   "dependencies": {
     "@paypal/checkout-server-sdk": "^1.0.3",

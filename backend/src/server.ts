@@ -166,6 +166,205 @@ app.get('/api/auth/me', (req, res) => {
   }
 })
 
+// Tours endpoint - return demo data
+app.get('/api/v1/tours', (req, res) => {
+  // Demo tours data matching our seeded database
+  const tours = [
+    {
+      id: '1',
+      title: 'Bali Island Paradise Experience',
+      slug: 'bali-island-paradise',
+      description: 'Discover the magical island of Bali with its pristine beaches, ancient temples, and lush rice terraces. This comprehensive tour takes you through the cultural heart of Indonesia.',
+      base_price: 1299,
+      type: 'beach',
+      difficulty_level: 'easy',
+      duration_days: 7,
+      min_group_size: 2,
+      max_group_size: 12,
+      is_active: true,
+      operator: {
+        full_name: 'Bali Adventures DMC'
+      },
+      images: [
+        {
+          url: '/api/placeholder/400/300',
+          alt_text: 'Bali Beach Paradise',
+          is_primary: true
+        }
+      ],
+      categories: [
+        {
+          category: {
+            name: 'Beach Tours',
+            slug: 'beach-tours'
+          }
+        }
+      ]
+    },
+    {
+      id: '2',
+      title: 'Japan Cultural Discovery',
+      slug: 'japan-cultural-discovery',
+      description: 'Immerse yourself in the rich culture of Japan, from ancient temples in Kyoto to the bustling streets of Tokyo. Experience traditional tea ceremonies and modern innovation.',
+      base_price: 1899,
+      type: 'cultural',
+      difficulty_level: 'moderate',
+      duration_days: 10,
+      min_group_size: 4,
+      max_group_size: 8,
+      is_active: true,
+      operator: {
+        full_name: 'Japan Explorer Tours'
+      },
+      images: [
+        {
+          url: '/api/placeholder/400/300',
+          alt_text: 'Traditional Japanese Temple',
+          is_primary: true
+        }
+      ],
+      categories: [
+        {
+          category: {
+            name: 'Cultural Tours',
+            slug: 'cultural-tours'
+          }
+        }
+      ]
+    },
+    {
+      id: '3',
+      title: 'Singapore City Explorer',
+      slug: 'singapore-city-explorer',
+      description: 'Explore the vibrant city-state of Singapore with its futuristic architecture, diverse neighborhoods, and world-class attractions.',
+      base_price: 899,
+      type: 'city',
+      difficulty_level: 'easy',
+      duration_days: 5,
+      min_group_size: 2,
+      max_group_size: 15,
+      is_active: true,
+      operator: {
+        full_name: 'Singapore Discovery Co'
+      },
+      images: [
+        {
+          url: '/api/placeholder/400/300',
+          alt_text: 'Singapore Skyline',
+          is_primary: true
+        }
+      ],
+      categories: [
+        {
+          category: {
+            name: 'City Tours',
+            slug: 'city-tours'
+          }
+        }
+      ]
+    },
+    {
+      id: '4',
+      title: 'Thailand Adventure Trek',
+      slug: 'thailand-adventure-trek',
+      description: 'Trek through the lush jungles of northern Thailand, visit hill tribes, and experience the authentic local culture away from tourist crowds.',
+      base_price: 749,
+      type: 'adventure',
+      difficulty_level: 'challenging',
+      duration_days: 8,
+      min_group_size: 3,
+      max_group_size: 10,
+      is_active: true,
+      operator: {
+        full_name: 'Thai Adventure Tours'
+      },
+      images: [
+        {
+          url: '/api/placeholder/400/300',
+          alt_text: 'Thai Jungle Trek',
+          is_primary: true
+        }
+      ],
+      categories: [
+        {
+          category: {
+            name: 'Adventure Tours',
+            slug: 'adventure-tours'
+          }
+        }
+      ]
+    },
+    {
+      id: '5',
+      title: 'Malaysia Historical Journey',
+      slug: 'malaysia-historical-journey',
+      description: "Journey through Malaysia's rich history, from colonial architecture in Penang to the ancient temples of the Cameron Highlands.",
+      base_price: 1199,
+      type: 'historical',
+      difficulty_level: 'moderate',
+      duration_days: 6,
+      min_group_size: 2,
+      max_group_size: 12,
+      is_active: true,
+      operator: {
+        full_name: 'Heritage Malaysia Tours'
+      },
+      images: [
+        {
+          url: '/api/placeholder/400/300',
+          alt_text: 'Historical Malaysian Architecture',
+          is_primary: true
+        }
+      ],
+      categories: [
+        {
+          category: {
+            name: 'Historical Tours',
+            slug: 'historical-tours'
+          }
+        }
+      ]
+    },
+    {
+      id: '6',
+      title: 'Bangkok Urban Experience',
+      slug: 'bangkok-urban-experience',
+      description: 'Discover the energy of Bangkok with its street food, floating markets, and vibrant nightlife combined with modern shopping districts.',
+      base_price: 599,
+      type: 'city',
+      difficulty_level: 'easy',
+      duration_days: 4,
+      min_group_size: 1,
+      max_group_size: 20,
+      is_active: true,
+      operator: {
+        full_name: 'Bangkok Urban Tours'
+      },
+      images: [
+        {
+          url: '/api/placeholder/400/300',
+          alt_text: 'Bangkok Cityscape',
+          is_primary: true
+        }
+      ],
+      categories: [
+        {
+          category: {
+            name: 'City Tours',
+            slug: 'city-tours'
+          }
+        }
+      ]
+    }
+  ]
+
+  res.json({
+    success: true,
+    tours: tours,
+    count: tours.length
+  })
+})
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`)
