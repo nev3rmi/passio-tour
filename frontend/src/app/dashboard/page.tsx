@@ -1,58 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import LayoutWrapper from '@/components/layout/LayoutWrapper'
-import LoadingState from '@/components/layout/LoadingState'
 import { DashboardSkeleton } from '@/components/ui/Skeleton'
-
-interface User {
-  id: string
-  name: string
-  email: string
-}
+import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem('token')
-
-      if (!token) {
-        setIsLoading(false)
-        router.push('/login')
-        return
-      }
-
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error('Unauthorized')
-        }
-
-        const data = await response.json()
-        setUser(data.user)
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Auth error:', error)
-        localStorage.removeItem('token')
-        setIsLoading(false)
-        router.push('/login')
-      }
-    }
-
-    fetchUser()
-  }, [router])
+  const { user, isLoading } = useAuth(true) // Require authentication
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -70,7 +27,7 @@ export default function DashboardPage() {
   }
 
   if (!user) {
-    return null
+    return null // Will redirect to login
   }
 
   return (
@@ -121,9 +78,10 @@ export default function DashboardPage() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="flex gap-4">
-              <Button>Create New Tour</Button>
+              <Button onClick={() => router.push('/tours/create')}>Create New Tour</Button>
               <Button variant="outline">View Bookings</Button>
               <Button variant="outline">Reports</Button>
+              <Button variant="outline" onClick={handleLogout}>Logout</Button>
             </CardContent>
           </Card>
         </div>
