@@ -123,6 +123,68 @@ class App {
     })
 
     // Temporary mock auth endpoints for testing
+    this.express.post('/api/auth/register', (req, res) => {
+      const { name, email, password } = req.body
+
+      // Validate required fields
+      if (!name || !email || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'All fields are required'
+        })
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid email format'
+        })
+      }
+
+      // Validate password length
+      if (password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 8 characters'
+        })
+      }
+
+      // Check if email already exists (mock check against known test accounts)
+      const existingEmails = [
+        'admin@passiotour.com',
+        'tour-operator@example.com',
+        'partner@example.com',
+        'customer1@example.com',
+        'customer2@example.com'
+      ]
+
+      if (existingEmails.includes(email.toLowerCase())) {
+        return res.status(409).json({
+          success: false,
+          message: 'Email already registered'
+        })
+      }
+
+      // Mock successful registration - create JWT token
+      const token = 'mock-jwt-token-' + Date.now()
+      const userId = '550e8400-e29b-41d4-a716-' + Date.now().toString(16).substring(0, 12)
+
+      res.status(201).json({
+        success: true,
+        token,
+        user: {
+          id: userId,
+          email: email,
+          name: name,
+          full_name: name,
+          role: 'customer'
+        },
+        message: 'Account created successfully'
+      })
+    })
+
     this.express.post('/api/auth/login', (req, res) => {
       const { email, password } = req.body
 
@@ -135,8 +197,22 @@ class App {
           user: {
             id: '550e8400-e29b-41d4-a716-446655440001',
             email: 'admin@passiotour.com',
+            name: 'Admin User',
             full_name: 'Admin User',
             role: 'admin'
+          }
+        })
+      } else if (email === 'customer1@example.com' && password === 'Customer@123') {
+        const token = 'mock-jwt-token-' + Date.now()
+        res.json({
+          success: true,
+          token,
+          user: {
+            id: '550e8400-e29b-41d4-a716-446655440004',
+            email: 'customer1@example.com',
+            name: 'Emma Davis',
+            full_name: 'Emma Davis',
+            role: 'customer'
           }
         })
       } else {
@@ -152,11 +228,14 @@ class App {
       const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null
 
       if (token && token.startsWith('mock-jwt-token-')) {
+        // For mock implementation, return a generic user
+        // In production, this would decode the JWT and fetch real user data
         res.json({
           success: true,
           user: {
             id: '550e8400-e29b-41d4-a716-446655440001',
             email: 'admin@passiotour.com',
+            name: 'Admin User',
             full_name: 'Admin User',
             role: 'admin'
           }
