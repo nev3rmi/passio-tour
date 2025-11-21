@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import LayoutWrapper from '@/components/layout/LayoutWrapper'
+import LoadingState from '@/components/layout/LoadingState'
 
 interface User {
   id: string
@@ -56,9 +58,9 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
+      <LayoutWrapper>
+        <LoadingState message="Loading dashboard..." size="large" />
+      </LayoutWrapper>
     )
   }
 
@@ -67,16 +69,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <header className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-blue-600">Passio Tour Dashboard</h1>
-          <Button onClick={handleLogout} variant="outline">
-            Logout
-          </Button>
-        </div>
-      </header>
-
+    <LayoutWrapper user={user} background="light">
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -130,6 +123,6 @@ export default function DashboardPage() {
           </Card>
         </div>
       </main>
-    </div>
+    </LayoutWrapper>
   )
 }
