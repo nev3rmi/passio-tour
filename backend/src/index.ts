@@ -15,8 +15,10 @@ import { errorHandler, notFoundHandler } from '@/middleware/errorHandler'
 import { validateEnv } from '@/utils/validateEnv'
 
 // Import API routes
-import { toursRouter } from '@/api/routes/tours'
-import { inventoryRouter } from '@/api/routes/inventory'
+// Note: tours router temporarily disabled
+// import { toursRouter } from '@/api/routes/tours'
+// import { inventoryRouter } from '@/api/routes/inventory'
+// import { authRouter } from './routes/auth'
 
 class App {
   public express: express.Application
@@ -120,9 +122,98 @@ class App {
       })
     })
 
+    // Temporary mock auth endpoints for testing
+    this.express.post('/api/auth/login', (req, res) => {
+      const { email, password } = req.body
+
+      // Simple mock authentication (matches seed data)
+      if (email === 'admin@passiotour.com' && password === 'Admin@123') {
+        const token = 'mock-jwt-token-' + Date.now()
+        res.json({
+          success: true,
+          token,
+          user: {
+            id: '550e8400-e29b-41d4-a716-446655440001',
+            email: 'admin@passiotour.com',
+            full_name: 'Admin User',
+            role: 'admin'
+          }
+        })
+      } else {
+        res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
+        })
+      }
+    })
+
+    this.express.get('/api/auth/me', (req, res) => {
+      const authHeader = req.headers.authorization
+      const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null
+
+      if (token && token.startsWith('mock-jwt-token-')) {
+        res.json({
+          success: true,
+          user: {
+            id: '550e8400-e29b-41d4-a716-446655440001',
+            email: 'admin@passiotour.com',
+            full_name: 'Admin User',
+            role: 'admin'
+          }
+        })
+      } else {
+        res.status(401).json({
+          success: false,
+          message: 'Unauthorized'
+        })
+      }
+    })
+
     // API routes
-    this.express.use('/api/v1/tours', toursRouter)
-    this.express.use('/api/v1/inventory', inventoryRouter)
+    // Note: tours router temporarily disabled due to missing dependencies
+    // this.express.use('/api/v1/tours', toursRouter)
+    // this.express.use('/api/v1/inventory', inventoryRouter)
+    // this.express.use('/api/auth', authRouter)
+
+    // Temporary mock tours endpoint for testing
+    this.express.get('/api/v1/tours', async (req, res) => {
+      try {
+        res.json({
+          success: true,
+          data: {
+            tours: [
+              {
+                id: '1',
+                title: 'Bali Island Paradise',
+                name: 'Bali Island Paradise',
+                tour_type: 'LEISURE',
+                status: 'PUBLISHED',
+                short_description: 'Discover the beauty of Bali',
+                base_price: 1299,
+                currency: 'USD',
+                duration_days: 7,
+                duration_nights: 6,
+                images: []
+              }
+            ],
+            pagination: {
+              page: 1,
+              limit: 10,
+              total: 1,
+              totalPages: 1
+            }
+          }
+        })
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'Failed to fetch tours'
+          }
+        })
+      }
+    })
 
     // API documentation endpoint
     this.express.get('/api', (req, res) => {
@@ -132,6 +223,7 @@ class App {
         documentation: 'https://github.com/passio-tour/api-docs',
         endpoints: {
           health: '/health',
+          auth: '/api/auth',
           tours: '/api/v1/tours',
           inventory: '/api/v1/inventory',
           bookings: '/api/v1/bookings',

@@ -35,7 +35,7 @@
       "@/models/*": ["./src/models/*"],
       "@/config/*": ["./src/config/*"],
       "@/utils/*": ["./src/utils/*"],
-      "@/types/*": ["../shared/types/*"]
+      "@/types/*": ["./shared/types/*"]
     },
 
     /* Additional options */
@@ -44,7 +44,7 @@
   },
   "include": [
     "src/**/*",
-    "../shared/types/**/*"
+    "shared/types/**/*"
   ],
   "exclude": [
     "node_modules",

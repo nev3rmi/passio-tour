@@ -2,7 +2,6 @@ import { Router, Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { TourController } from '../controllers/TourController';
 import { auth } from '../../middleware/auth';
-import { validationResult } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();

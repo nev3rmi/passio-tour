@@ -16,17 +16,27 @@ interface TourCardProps {
 
 export default function TourCard({ tour, showActions = true }: TourCardProps) {
   const primaryImage = tour.images?.find(img => img.is_primary) || tour.images?.[0]
-  const rating = tour.rating || 0
-  const reviewCount = tour.review_count || 0
+  const rating = tour.rating || tour.average_rating || 0
+  const reviewCount = tour.review_count || tour.total_reviews || 0
+  const tourName = tour.name || tour.title
+  const shortDesc = tour.short_description || tour.shortDescription
+  const minPart = tour.min_participants || tour.group_size_min
+  const maxPart = tour.max_participants || tour.group_size_max
+  const durationHours = tour.duration_hours || tour.duration_days * 8
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'published':
+    const upperStatus = status?.toUpperCase()
+    switch (upperStatus) {
+      case 'PUBLISHED':
         return 'bg-green-100 text-green-800'
-      case 'draft':
+      case 'DRAFT':
         return 'bg-gray-100 text-gray-800'
-      case 'suspended':
+      case 'PENDING_REVIEW':
+        return 'bg-blue-100 text-blue-800'
+      case 'SUSPENDED':
         return 'bg-yellow-100 text-yellow-800'
+      case 'ARCHIVED':
+        return 'bg-red-100 text-red-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -42,7 +52,7 @@ export default function TourCard({ tour, showActions = true }: TourCardProps) {
         {primaryImage ? (
           <Image
             src={primaryImage.url}
-            alt={primaryImage.alt_text || tour.name}
+            alt={primaryImage.alt_text || tourName}
             fill
             className="object-cover"
           />
@@ -69,28 +79,32 @@ export default function TourCard({ tour, showActions = true }: TourCardProps) {
 
       <CardHeader className="flex-1">
         <div className="flex items-start justify-between gap-2">
-          <H4 className="line-clamp-2 flex-1">{tour.name}</H4>
+          <H4 className="line-clamp-2 flex-1">{tourName}</H4>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="h-4 w-4" />
-          <span className="line-clamp-1">{tour.destination}</span>
-        </div>
+        {tour.destination && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            <span className="line-clamp-1">{tour.destination}</span>
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="flex-1 space-y-3">
-        <p className="text-sm text-muted-foreground line-clamp-3">
-          {tour.short_description}
-        </p>
+        {shortDesc && (
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            {shortDesc}
+          </p>
+        )}
 
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <span>{tour.duration_hours} hours</span>
+            <span>{durationHours} hours</span>
           </div>
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground" />
             <span>
-              {tour.min_participants}-{tour.max_participants}
+              {minPart}-{maxPart}
             </span>
           </div>
         </div>
@@ -106,7 +120,7 @@ export default function TourCard({ tour, showActions = true }: TourCardProps) {
             </div>
           </div>
           <Badge variant="secondary" className="text-xs">
-            {getTypeLabel(tour.type)}
+            {getTypeLabel(tour.type || tour.tour_type)}
           </Badge>
         </div>
       </CardContent>

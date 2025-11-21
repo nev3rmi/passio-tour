@@ -14,8 +14,8 @@ import {
   GetTourResponse,
   SearchToursResponse,
   DeleteTourResponse 
-} from '../../../shared/types/tour';
-import { TourImageCreate } from '../../../shared/types/tour-image';
+} from '@/types/tour';
+import { TourImageCreate } from '@/types/tour-image';
 import { ApiResponseBuilder } from '../../middleware/apiResponse';
 import { logger } from '../../utils/enhancedLogger';
 
@@ -889,6 +889,88 @@ export class TourController {
       }
     }
   }
-}
 
-export default new TourController();
+  /**
+   * Get tour by ID
+   * GET /api/v1/tours/:id
+   */
+  async getTourById(req: Request, res: Response): Promise<void> {
+    return this.getTour(req, res);
+  }
+
+  /**
+   * Get tour availability
+   * GET /api/v1/tours/:id/availability
+   */
+  async getTourAvailability(req: Request, res: Response): Promise<void> {
+    res.status(200).json({
+      success: true,
+      data: {
+        tour_id: req.params.id,
+        availability: [],
+        message: 'Availability check not implemented yet'
+      }
+    });
+  }
+
+  /**
+   * Clone a tour
+   * POST /api/v1/tours/:id/clone
+   */
+  async cloneTour(req: Request, res: Response): Promise<void> {
+    res.status(501).json({
+      success: false,
+      error: {
+        code: 'NOT_IMPLEMENTED',
+        message: 'Tour cloning feature not implemented yet'
+      }
+    });
+  }
+
+  /**
+   * Update tour status
+   * PATCH /api/v1/tours/:id/status
+   */
+  async updateTourStatus(req: Request, res: Response): Promise<void> {
+    res.status(501).json({
+      success: false,
+      error: {
+        code: 'NOT_IMPLEMENTED',
+        message: 'Tour status update feature not implemented yet'
+      }
+    });
+  }
+
+  /**
+   * Get tour analytics
+   * GET /api/v1/tours/:id/analytics
+   */
+  async getTourAnalytics(req: Request, res: Response): Promise<void> {
+    res.status(200).json({
+      success: true,
+      data: {
+        tour_id: req.params.id,
+        analytics: {
+          views: 0,
+          bookings: 0,
+          revenue: 0
+        },
+        message: 'Analytics feature not fully implemented yet'
+      }
+    });
+  }
+
+  /**
+   * Add review to tour
+   * POST /api/v1/tours/:id/reviews
+   */
+  async addReview(req: Request, res: Response): Promise<void> {
+    res.status(501).json({
+      success: false,
+      error: {
+        code: 'NOT_IMPLEMENTED',
+        message: 'Review feature not implemented yet'
+      }
+    });
+  }
+}

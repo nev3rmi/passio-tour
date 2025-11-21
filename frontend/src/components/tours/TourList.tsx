@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { H2, Muted } from '@/components/ui/typography'
 import { Grid, List } from 'lucide-react'
 import { TourSearchParams } from '@/types/tour'
+import { TourListSkeleton } from '@/components/ui/Skeleton'
 
 interface TourListProps {
   searchParams?: TourSearchParams
@@ -28,11 +29,11 @@ export default function TourList({
   const { data, isLoading, error, isFetching } = useTours(params)
 
   if (isLoading && page === 1) {
-    return <LoadingState />
+    return <TourListSkeleton count={6} />
   }
 
   if (error) {
-    return <ErrorState message={error.message} />
+    return <ErrorState error={error.message} />
   }
 
   if (!data || data.tours.length === 0) {

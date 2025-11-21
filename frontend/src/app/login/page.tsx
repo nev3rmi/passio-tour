@@ -78,6 +78,7 @@ export default function LoginPage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                   disabled={isLoading}
+                  autoComplete="email"
                 />
               </div>
 
@@ -99,6 +100,7 @@ export default function LoginPage() {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
               </div>
 

@@ -1,6 +1,9 @@
 import request from 'supertest';
-import { app } from '../../src/App';
 import { describe, it, expect, beforeEach } from '@jest/globals';
+
+// Create app instance for testing
+const appInstance = new (require('../../src/index').default)();
+const app = appInstance.express;
 
 describe('POST /api/v1/tours - Tour Create Contract Tests', () => {
   const baseURL = '/api/v1/tours';

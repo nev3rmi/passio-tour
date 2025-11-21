@@ -72,11 +72,12 @@ export const useTourStats = () => {
     const averagePrice = totalPrice / totalTours
     
     const tourTypes = data.tours.reduce((acc, tour) => {
-      acc[tour.type] = (acc[tour.type] || 0) + 1
+      const tourType = tour.type || tour.tour_type || 'UNKNOWN'
+      acc[tourType] = (acc[tourType] || 0) + 1
       return acc
     }, {} as Record<string, number>)
-    
-    const destinations = Array.from(new Set(data.tours.map(tour => tour.destination).filter(Boolean)))
+
+    const destinations = Array.from(new Set(data.tours.map(tour => tour.destination).filter(Boolean))) as string[]
     
     return {
       totalTours,

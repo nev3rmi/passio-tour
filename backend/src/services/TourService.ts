@@ -23,8 +23,8 @@ import {
   validateDuration,
   isValidCurrency,
   isValidLanguage
-} from '../../../shared/types/tour';
-import { TourImage, TourImageCreate, ImageValidationResult, validateImageFile } from '../../../shared/types/tour-image';
+} from '@/types/tour';
+import { TourImage, TourImageCreate, ImageValidationResult, validateImageFile } from '@/types/tour-image';
 import { 
   Inventory, 
   InventorySlot,

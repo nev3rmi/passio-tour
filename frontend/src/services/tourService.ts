@@ -1,116 +1,120 @@
 import { Tour, TourDetail, TourSearchParams, TourSearchResponse } from '@/types/tour'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
-
-interface ApiResponse<T> {
-  success: boolean
-  data?: T
-  message?: string
-  code?: string
-}
+import apiClient, { ApiResponse } from '@/lib/api-client'
 
 class TourService {
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${API_BASE}${endpoint}`
-    
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    }
-
-    const response = await fetch(url, config)
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Network error' }))
-      throw new Error(error.message || 'Request failed')
-    }
-    
-    return response.json()
-  }
 
   async searchTours(params: TourSearchParams = {}): Promise<TourSearchResponse> {
-    const queryParams = new URLSearchParams()
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        queryParams.append(key, String(value))
+    try {
+      const response = await apiClient.get<ApiResponse<TourSearchResponse>>('/tours', {
+        params,
+      })
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
       }
-    })
-    
-    const endpoint = `/tours${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-    const response = await this.request<ApiResponse<TourSearchResponse>>(endpoint)
-    
-    if (!response.success || !response.data) {
-      throw new Error(response.message || 'Failed to fetch tours')
+
+      throw new Error('Failed to fetch tours')
+    } catch (error: any) {
+      console.error('Search tours error:', error)
+      throw new Error(error.message || 'Failed to fetch tours')
     }
-    
-    return response.data
   }
 
   async getTourById(id: string): Promise<TourDetail> {
-    const response = await this.request<ApiResponse<TourDetail>>(`/tours/${id}`)
-    
-    if (!response.success || !response.data) {
-      throw new Error(response.message || 'Failed to fetch tour')
+    try {
+      const response = await apiClient.get<ApiResponse<TourDetail>>(`/tours/${id}`)
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error('Failed to fetch tour')
+    } catch (error: any) {
+      console.error('Get tour by ID error:', error)
+      throw new Error(error.message || 'Failed to fetch tour')
     }
-    
-    return response.data
   }
 
   async createTour(tourData: Partial<Tour>): Promise<Tour> {
-    const token = localStorage.getItem('token')
-    
-    const response = await this.request<ApiResponse<Tour>>('/tours', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(tourData),
-    })
-    
-    if (!response.success || !response.data) {
-      throw new Error(response.message || 'Failed to create tour')
+    try {
+      const response = await apiClient.post<ApiResponse<Tour>>('/tours', tourData)
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error('Failed to create tour')
+    } catch (error: any) {
+      console.error('Create tour error:', error)
+      throw new Error(error.message || 'Failed to create tour')
     }
-    
-    return response.data
   }
 
   async updateTour(id: string, tourData: Partial<Tour>): Promise<Tour> {
-    const token = localStorage.getItem('token')
-    
-    const response = await this.request<ApiResponse<Tour>>(`/tours/${id}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(tourData),
-    })
-    
-    if (!response.success || !response.data) {
-      throw new Error(response.message || 'Failed to update tour')
+    try {
+      const response = await apiClient.put<ApiResponse<Tour>>(`/tours/${id}`, tourData)
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error('Failed to update tour')
+    } catch (error: any) {
+      console.error('Update tour error:', error)
+      throw new Error(error.message || 'Failed to update tour')
     }
-    
-    return response.data
   }
 
   async deleteTour(id: string): Promise<void> {
-    const token = localStorage.getItem('token')
-    
-    const response = await this.request<ApiResponse<void>>(`/tours/${id}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-    
-    if (!response.success) {
-      throw new Error(response.message || 'Failed to delete tour')
+    try {
+      const response = await apiClient.delete<ApiResponse<void>>(`/tours/${id}`)
+
+      if (!response.data.success) {
+        throw new Error('Failed to delete tour')
+      }
+    } catch (error: any) {
+      console.error('Delete tour error:', error)
+      throw new Error(error.message || 'Failed to delete tour')
+    }
+  }
+
+  /**
+   * Get featured tours
+   */
+  async getFeaturedTours(limit: number = 10): Promise<Tour[]> {
+    try {
+      const response = await apiClient.get<ApiResponse<Tour[]>>('/tours/featured', {
+        params: { limit },
+      })
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error('Failed to fetch featured tours')
+    } catch (error: any) {
+      console.error('Get featured tours error:', error)
+      throw new Error(error.message || 'Failed to fetch featured tours')
+    }
+  }
+
+  /**
+   * Get popular tours
+   */
+  async getPopularTours(limit: number = 10, timeframe: 'week' | 'month' | 'year' = 'month'): Promise<Tour[]> {
+    try {
+      const response = await apiClient.get<ApiResponse<Tour[]>>('/tours/popular', {
+        params: { limit, timeframe },
+      })
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error('Failed to fetch popular tours')
+    } catch (error: any) {
+      console.error('Get popular tours error:', error)
+      throw new Error(error.message || 'Failed to fetch popular tours')
     }
   }
 }

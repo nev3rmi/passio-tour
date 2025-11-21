@@ -14,7 +14,7 @@ import {
   ImageProcessingOptions,
   ImageUploadResponse,
   DeleteImageResponse
-} from '../../../shared/types/tour-image';
+} from '@/types/tour-image';
 import { logger } from '../utils/enhancedLogger';
 import { ApiError } from '../middleware/apiResponse';
 

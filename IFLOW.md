@@ -68,6 +68,8 @@ docker-compose -f docker-compose.dev.yml logs -f frontend
 - **Development Tools**: Includes debugging and inspection tools
 - **Environment Isolation**: Separate development environment configuration
 
+**Note:** The Docker development setup provides hot reload functionality for both frontend and backend services. When you make changes to your code, the containers will automatically detect the changes and rebuild/restart, providing a seamless development experience without manual container restarts.
+
 ### Development Commands
 ```bash
 # Install dependencies for all workspaces

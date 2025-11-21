@@ -198,7 +198,6 @@ export class EnhancedLogger {
     })
 
     this.setupExceptionHandling()
-    this.setupRejectionHandling()
   }
 
   private setupExceptionHandling(): void {

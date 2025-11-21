@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import LayoutWrapper from '@/components/layout/LayoutWrapper'
 import LoadingState from '@/components/layout/LoadingState'
+import { DashboardSkeleton } from '@/components/ui/Skeleton'
 
 interface User {
   id: string
@@ -23,6 +24,7 @@ export default function DashboardPage() {
       const token = localStorage.getItem('token')
 
       if (!token) {
+        setIsLoading(false)
         router.push('/login')
         return
       }
@@ -40,11 +42,12 @@ export default function DashboardPage() {
 
         const data = await response.json()
         setUser(data.user)
-      } catch (error) {
-        localStorage.removeItem('token')
-        router.push('/login')
-      } finally {
         setIsLoading(false)
+      } catch (error) {
+        console.error('Auth error:', error)
+        localStorage.removeItem('token')
+        setIsLoading(false)
+        router.push('/login')
       }
     }
 
@@ -59,7 +62,9 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <LayoutWrapper>
-        <LoadingState message="Loading dashboard..." size="large" />
+        <main className="container mx-auto px-4 py-8">
+          <DashboardSkeleton />
+        </main>
       </LayoutWrapper>
     )
   }
@@ -69,7 +74,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <LayoutWrapper user={user} background="light">
+    <LayoutWrapper user={user} background="white">
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
