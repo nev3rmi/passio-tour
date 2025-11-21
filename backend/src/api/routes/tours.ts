@@ -264,7 +264,7 @@ router.get('/popular',
 
 // GET /api/v1/tours/:id - Get tour by ID
 router.get('/:id',
-  param('id').isUUID().withMessage('Invalid tour ID'),
+  param('id').notEmpty().withMessage('Tour ID is required'),
   validateRequest,
   tourController.getTourById.bind(tourController)
 );

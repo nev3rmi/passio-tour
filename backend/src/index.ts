@@ -215,6 +215,84 @@ class App {
       }
     })
 
+    // Temporary mock tour details endpoint for testing
+    this.express.get('/api/v1/tours/:id', async (req, res) => {
+      try {
+        const { id } = req.params
+
+        // Mock tour data with more details
+        const tour = {
+          id: '1',
+          title: 'Bali Island Paradise',
+          name: 'Bali Island Paradise',
+          tour_type: 'LEISURE',
+          status: 'PUBLISHED',
+          short_description: 'Discover the beauty of Bali with pristine beaches, ancient temples, and lush rice terraces',
+          long_description: 'Experience the magic of Bali on this comprehensive 7-day journey through the Island of Gods. From the stunning beaches of Seminyak to the cultural heart of Ubud, explore ancient temples, witness breathtaking sunsets, and immerse yourself in Balinese traditions. This tour includes visits to iconic landmarks like Tanah Lot Temple, the Tegalalang Rice Terraces, and the sacred Monkey Forest. Enjoy traditional dance performances, indulge in authentic Balinese cuisine, and relax with a rejuvenating spa treatment.',
+          base_price: 1299,
+          currency: 'USD',
+          duration_days: 7,
+          duration_nights: 6,
+          max_group_size: 12,
+          destination: 'Bali, Indonesia',
+          images: [
+            'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800',
+            'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800',
+            'https://images.unsplash.com/photo-1555400082-6e2a69ad0b8c?w=800'
+          ],
+          rating: 4.8,
+          reviews_count: 127,
+          highlights: [
+            'Visit ancient temples including Tanah Lot and Uluwatu',
+            'Explore the stunning Tegalalang Rice Terraces in Ubud',
+            'Traditional Balinese cooking class and market tour',
+            'Sunset dinner on Jimbaran Beach',
+            'Professional local guide throughout the journey',
+            'Experience traditional Kecak fire dance performance'
+          ],
+          included: [
+            '6 nights accommodation in 4-star hotels',
+            'Daily breakfast and 4 dinners',
+            'All transportation in air-conditioned vehicle',
+            'Professional English-speaking guide',
+            'Entrance fees to all attractions',
+            'Traditional Balinese massage session'
+          ],
+          not_included: [
+            'International flights',
+            'Travel insurance',
+            'Personal expenses and tips',
+            'Lunches (unless specified)',
+            'Optional activities not mentioned in itinerary',
+            'Visa fees if applicable'
+          ]
+        }
+
+        if (id !== '1') {
+          return res.status(404).json({
+            success: false,
+            error: {
+              code: 'TOUR_NOT_FOUND',
+              message: 'Tour not found'
+            }
+          })
+        }
+
+        res.json({
+          success: true,
+          data: tour
+        })
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'Failed to fetch tour details'
+          }
+        })
+      }
+    })
+
     // API documentation endpoint
     this.express.get('/api', (req, res) => {
       res.json({

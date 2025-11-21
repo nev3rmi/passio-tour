@@ -193,18 +193,17 @@ export class TourController {
    */
   async getTour(req: Request, res: Response): Promise<void> {
     const method = 'getTour';
-    const correlationId = `tour_get_${req.params.tour_id}`;
-    
+    const tour_id = req.params.id || req.params.tour_id;
+    const correlationId = `tour_get_${tour_id}`;
+
     try {
       logger.info('Getting tour request received', {
         service: this.controllerName,
         method,
         correlationId,
-        tourId: req.params.tour_id,
+        tourId: tour_id,
         headers: req.headers
       });
-
-      const { tour_id } = req.params;
 
       // Validate tour ID
       if (!tour_id || typeof tour_id !== 'string' || tour_id.length === 0) {
